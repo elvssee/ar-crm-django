@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.db.models import Q
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from clients.views import firm_clients, firm_required
 
@@ -31,6 +33,48 @@ def project_list(request):
         "stages": Project.STAGE_CHOICES,
     }
     return render(request, "projects/project_list.html", context)
+
+
+@firm_required
+def project_board(request):
+    """Kanban board: one column per stage, built from the firm's own projects only."""
+    projects = list(firm_projects(request).order_by("-updated_at"))
+    values = [value for value, _ in Project.STAGE_CHOICES]
+    columns = []
+    for index, (value, label) in enumerate(Project.STAGE_CHOICES):
+        items = [p for p in projects if p.stage == value]
+        for p in items:
+            p.prev_stage = values[index - 1] if index > 0 else None
+            p.next_stage = values[index + 1] if index < len(values) - 1 else None
+        columns.append(
+            {
+                "value": value,
+                "label": label,
+                "projects": items,
+                "count": len(items),
+                "total": sum((p.estimated_fee or 0) for p in items),
+            }
+        )
+    open_value = sum(c["total"] for c in columns if c["value"] != Project.STAGE_COMPLETED)
+    return render(
+        request,
+        "projects/project_board.html",
+        {"columns": columns, "open_value": open_value, "total_projects": len(projects)},
+    )
+
+
+@firm_required
+@require_POST
+def project_move(request, pk):
+    project = get_object_or_404(firm_projects(request), pk=pk)
+    stage = request.POST.get("stage", "")
+    if stage not in dict(Project.STAGE_CHOICES):
+        return HttpResponseBadRequest("Unknown stage")
+    project.stage = stage
+    project.save(update_fields=["stage", "updated_at"])
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": True, "stage": stage})
+    return redirect("project_board")
 
 
 @firm_required

@@ -6,7 +6,10 @@
     <h1 class="text-3xl font-semibold tracking-tight">Projects</h1>
     <p class="mt-1 text-sm text-gray-600">{{ projects|length }} project{{ projects|length|pluralize }}</p>
   </div>
-  <a href="{% url 'project_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add project</a>
+  <div class="flex gap-3">
+    <a href="{% url 'project_board' %}" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Board view</a>
+    <a href="{% url 'project_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add project</a>
+  </div>
 </div>
 
 <div class="mt-6 flex flex-wrap gap-2 text-sm">

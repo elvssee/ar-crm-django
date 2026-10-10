@@ -1,0 +1,115 @@
+{% extends "app_base.html" %}
+{% block title %}Pipeline · Architecture CRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight">Pipeline</h1>
+    <p class="mt-1 text-sm text-gray-600">
+      {{ total_projects }} project{{ total_projects|pluralize }}
+      {% if open_value %} · open pipeline value ₹{{ open_value|floatformat:"0g" }}{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-3">
+    <a href="{% url 'project_list' %}" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">List view</a>
+    <a href="{% url 'project_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add project</a>
+  </div>
+</div>
+
+<p class="mt-4 text-sm text-gray-500">Drag a card to another column, or use the arrows on a card.</p>
+
+<div class="mt-6 flex gap-4 overflow-x-auto pb-4">
+  {% for column in columns %}
+  <section data-column data-stage="{{ column.value }}"
+           class="w-72 flex-none rounded border border-gray-200 bg-stone-100 p-3">
+    <header class="mb-3 flex items-baseline justify-between px-1">
+      <h2 class="text-sm font-semibold">{{ column.label }}
+        <span class="ml-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-600">{{ column.count }}</span>
+      </h2>
+      {% if column.total %}<span class="text-xs text-gray-500">₹{{ column.total|floatformat:"0g" }}</span>{% endif %}
+    </header>
+
+    <div class="min-h-24 space-y-3">
+      {% for project in column.projects %}
+      <article draggable="true" data-card data-url="{% url 'project_move' project.pk %}"
+               class="cursor-grab rounded border border-gray-200 bg-white p-3 shadow-sm">
+        <a href="{% url 'project_edit' project.pk %}" class="block text-sm font-semibold hover:underline">{{ project.title }}</a>
+        <p class="mt-1 text-xs text-gray-600">{{ project.client.name }}</p>
+        <p class="mt-1 text-xs text-gray-500">
+          {{ project.get_project_type_display }}{% if project.estimated_fee %} · ₹{{ project.estimated_fee|floatformat:"0g" }}{% endif %}
+        </p>
+        <div class="mt-3 flex items-center justify-between">
+          <form method="post" action="{% url 'project_move' project.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="{{ project.prev_stage }}">
+            <button type="submit" {% if not project.prev_stage %}disabled{% endif %}
+                    class="rounded border border-gray-300 px-2 py-1 text-xs font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label="Move to previous stage">&larr;</button>
+          </form>
+          <form method="post" action="{% url 'project_move' project.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="{{ project.next_stage }}">
+            <button type="submit" {% if not project.next_stage %}disabled{% endif %}
+                    class="rounded border border-gray-300 px-2 py-1 text-xs font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label="Move to next stage">&rarr;</button>
+          </form>
+        </div>
+      </article>
+      {% empty %}
+      <p class="px-1 py-6 text-center text-xs text-gray-400">Nothing here</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+<script>
+  (function () {
+    var tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!tokenInput) { return; }
+    var csrf = tokenInput.value;
+    var dragUrl = null;
+
+    document.querySelectorAll('[data-card]').forEach(function (card) {
+      card.addEventListener('dragstart', function (event) {
+        dragUrl = card.dataset.url;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', dragUrl);
+        card.classList.add('opacity-50');
+      });
+      card.addEventListener('dragend', function () {
+        card.classList.remove('opacity-50');
+      });
+    });
+
+    document.querySelectorAll('[data-column]').forEach(function (column) {
+      var highlight = ['ring-2', 'ring-emerald-600'];
+      column.addEventListener('dragover', function (event) {
+        event.preventDefault();
+        column.classList.add.apply(column.classList, highlight);
+      });
+      column.addEventListener('dragleave', function () {
+        column.classList.remove.apply(column.classList, highlight);
+      });
+      column.addEventListener('drop', function (event) {
+        event.preventDefault();
+        column.classList.remove.apply(column.classList, highlight);
+        var url = dragUrl || event.dataTransfer.getData('text/plain');
+        dragUrl = null;
+        if (!url) { return; }
+        var body = new FormData();
+        body.append('stage', column.dataset.stage);
+        fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+          body: body
+        }).then(function (response) {
+          if (response.ok) { window.location.reload(); }
+          else { alert('Could not move the project. Please try again.'); }
+        }).catch(function () {
+          alert('Could not move the project. Please try again.');
+        });
+      });
+    });
+  })();
+</script>
+{% endblock %}

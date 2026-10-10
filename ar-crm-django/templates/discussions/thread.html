@@ -1,0 +1,97 @@
+{% extends "app_base.html" %}
+{% block title %}{{ project.title }} discussion · Architecture CRM{% endblock %}
+{% block content %}
+<a href="{% url 'discussion_inbox' %}" class="text-sm text-gray-600 hover:underline">&larr; All discussions</a>
+<div class="mt-3 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight">{{ project.title }}</h1>
+    <p class="mt-1 text-sm text-gray-600">{{ project.client.name }}{% if project.site_location %} · {{ project.site_location }}{% endif %}</p>
+  </div>
+  <a href="{% url 'project_drawings' project.pk %}" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Drawings</a>
+</div>
+
+<div class="mt-6 max-w-3xl">
+  <div id="message-list" class="space-y-3" data-poll-url="{% url 'discussion_poll' project.pk %}">
+    {% for message in messages_list %}{% include "discussions/_message.html" %}{% endfor %}
+  </div>
+  <p id="empty-chat" class="rounded border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500 {% if messages_list %}hidden{% endif %}">
+    No messages yet. Start the conversation below.
+  </p>
+
+  <form id="send-form" method="post" action="{% url 'discussion_send' project.pk %}" class="mt-6 space-y-3 rounded border border-gray-200 bg-white p-4">
+    {% csrf_token %}
+    {{ form.body }}
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="min-w-0 flex-1">{{ form.drawing }}</div>
+      <button type="submit" class="rounded bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Send</button>
+    </div>
+  </form>
+  <p class="mt-2 text-xs text-gray-500">New messages from your team appear here automatically.</p>
+</div>
+
+<script>
+  (function () {
+    var list = document.getElementById('message-list');
+    var empty = document.getElementById('empty-chat');
+    var form = document.getElementById('send-form');
+    var pollUrl = list.dataset.pollUrl;
+    var ajaxHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+
+    function lastId() {
+      var items = list.querySelectorAll('[data-message-id]');
+      return items.length ? items[items.length - 1].dataset.messageId : 0;
+    }
+    function nearBottom() {
+      return (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 200);
+    }
+    function scrollToBottom() { window.scrollTo(0, document.body.scrollHeight); }
+
+    function addMessages(html) {
+      var holder = document.createElement('div');
+      holder.innerHTML = html;
+      Array.prototype.slice.call(holder.children).forEach(function (el) {
+        var id = el.dataset.messageId;
+        if (id && !list.querySelector('[data-message-id="' + id + '"]')) { list.appendChild(el); }
+      });
+      empty.classList.add('hidden');
+    }
+
+    function poll() {
+      if (document.hidden) { return; }
+      fetch(pollUrl + '?after=' + lastId(), { headers: ajaxHeaders, credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) {
+          if (html.trim()) {
+            var stick = nearBottom();
+            addMessages(html);
+            if (stick) { scrollToBottom(); }
+          }
+        })
+        .catch(function () {});
+    }
+    setInterval(poll, 5000);
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = form.querySelector('button[type=submit]');
+      button.disabled = true;
+      fetch(form.action, { method: 'POST', body: new FormData(form), headers: ajaxHeaders, credentials: 'same-origin' })
+        .then(function (r) {
+          return r.text().then(function (text) {
+            if (r.status === 201) {
+              addMessages(text);
+              form.reset();
+              scrollToBottom();
+            } else {
+              alert(text || 'Could not send the message. Please try again.');
+            }
+          });
+        })
+        .catch(function () { alert('Could not send the message. Check your connection.'); })
+        .then(function () { button.disabled = false; });
+    });
+
+    scrollToBottom();
+  })();
+</script>
+{% endblock %}

@@ -7,7 +7,10 @@
     <h1 class="text-3xl font-semibold tracking-tight">{{ project.title }}</h1>
     <p class="mt-1 text-sm text-gray-600">{{ project.client.name }}{% if project.site_location %} · {{ project.site_location }}{% endif %} · {{ project.get_stage_display }}</p>
   </div>
-  <a href="{% url 'drawing_upload' project.pk %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Upload drawings</a>
+  <div class="flex gap-3">
+    <a href="{% url 'project_discussion' project.pk %}" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Discussion</a>
+    <a href="{% url 'drawing_upload' project.pk %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Upload drawings</a>
+  </div>
 </div>
 
 <h2 class="mt-10 text-lg font-semibold">Drawings</h2>

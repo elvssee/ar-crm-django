@@ -1,0 +1,68 @@
+{% extends "app_base.html" %}
+{% block title %}Projects · Architecture CRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight">Projects</h1>
+    <p class="mt-1 text-sm text-gray-600">{{ projects|length }} project{{ projects|length|pluralize }}</p>
+  </div>
+  <a href="{% url 'project_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add project</a>
+</div>
+
+<div class="mt-6 flex flex-wrap gap-2 text-sm">
+  <a href="{% url 'project_list' %}{% if q %}?q={{ q|urlencode }}{% endif %}"
+     class="rounded-full border px-3 py-1 {% if not stage %}border-emerald-800 bg-emerald-800 text-white{% else %}border-gray-300 bg-white hover:bg-gray-100{% endif %}">All</a>
+  {% for value, label in stages %}
+    <a href="?stage={{ value }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+       class="rounded-full border px-3 py-1 {% if stage == value %}border-emerald-800 bg-emerald-800 text-white{% else %}border-gray-300 bg-white hover:bg-gray-100{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<form method="get" class="mt-4 flex gap-3">
+  {% if stage %}<input type="hidden" name="stage" value="{{ stage }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Search by project or client name"
+         class="block w-full max-w-md rounded border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20">
+  <button type="submit" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Search</button>
+</form>
+
+{% if projects %}
+<div class="mt-6 overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-left text-sm">
+    <thead class="border-b border-gray-200 bg-stone-50 text-xs uppercase tracking-wide text-gray-500">
+      <tr>
+        <th class="px-4 py-3">Project</th>
+        <th class="px-4 py-3">Client</th>
+        <th class="px-4 py-3">Type</th>
+        <th class="px-4 py-3">Stage</th>
+        <th class="px-4 py-3">Est. fee</th>
+        <th class="px-4 py-3">Start</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for project in projects %}
+      <tr>
+        <td class="px-4 py-3 font-medium"><a class="hover:underline" href="{% url 'project_edit' project.pk %}">{{ project.title }}</a></td>
+        <td class="px-4 py-3 text-gray-600">{{ project.client.name }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ project.get_project_type_display }}</td>
+        <td class="px-4 py-3">
+          <span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if project.stage == 'completed' %}bg-emerald-100 text-emerald-900{% else %}bg-gray-100 text-gray-800{% endif %}">{{ project.get_stage_display }}</span>
+        </td>
+        <td class="px-4 py-3 text-gray-600">{% if project.estimated_fee %}₹{{ project.estimated_fee|floatformat:"0g" }}{% else %}—{% endif %}</td>
+        <td class="px-4 py-3 text-gray-600">{{ project.start_date|date:"d M Y"|default:"—" }}</td>
+        <td class="whitespace-nowrap px-4 py-3 text-right">
+          <a class="font-semibold text-emerald-800 hover:underline" href="{% url 'project_edit' project.pk %}">Edit</a>
+          <a class="ml-4 font-semibold text-red-700 hover:underline" href="{% url 'project_delete' project.pk %}">Delete</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="mt-6 rounded border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
+  <p class="font-semibold">{% if q or stage %}No projects match.{% else %}No projects yet.{% endif %}</p>
+  {% if not q and not stage %}<p class="mt-1 text-sm text-gray-600">Add your first project to get started.</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -2,7 +2,7 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -69,7 +69,13 @@ def client_delete(request, pk):
     client = get_object_or_404(firm_clients(request), pk=pk)
     if request.method == "POST":
         name = client.name
-        client.delete()
+        try:
+            client.delete()
+        except ProtectedError:
+            messages.error(
+                request, f"{name} still has projects. Delete or move those projects first."
+            )
+            return redirect("client_list")
         messages.success(request, f"{name} was deleted.")
         return redirect("client_list")
     return render(request, "clients/client_confirm_delete.html", {"client": client})

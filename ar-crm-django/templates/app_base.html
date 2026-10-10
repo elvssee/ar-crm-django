@@ -9,6 +9,8 @@
            class="{% if request.path == '/' %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Dashboard</a>
         <a href="{% url 'client_list' %}"
            class="{% if '/clients/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Clients</a>
+        <a href="{% url 'project_list' %}"
+           class="{% if '/projects/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Projects</a>
       </nav>
     </div>
     <div class="flex items-center gap-4">
@@ -25,7 +27,11 @@
   {% if messages %}
     <div class="mb-6 space-y-2">
       {% for message in messages %}
-        <p class="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">{{ message }}</p>
+        {% if message.tags == 'error' %}
+          <p class="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ message }}</p>
+        {% else %}
+          <p class="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">{{ message }}</p>
+        {% endif %}
       {% endfor %}
     </div>
   {% endif %}

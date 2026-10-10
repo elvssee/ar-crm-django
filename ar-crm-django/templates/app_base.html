@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
 <header class="border-b border-gray-200 bg-white">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-    <div class="flex items-center gap-8">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+    <div class="flex flex-wrap items-center gap-x-8 gap-y-2">
       <span class="text-sm font-bold tracking-wide text-emerald-900">ARCHITECTURE CRM</span>
       <nav class="flex gap-5 text-sm font-medium">
         <a href="{% url 'dashboard' %}"
@@ -11,10 +11,14 @@
            class="{% if '/clients/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Clients</a>
         <a href="{% url 'project_list' %}"
            class="{% if '/projects/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Projects</a>
+        {% if request.user.is_firm_admin %}
+        <a href="{% url 'team_list' %}"
+           class="{% if '/team/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Team</a>
+        {% endif %}
       </nav>
     </div>
     <div class="flex items-center gap-4">
-      <span class="hidden text-sm text-gray-500 sm:inline">{{ request.user.email }}</span>
+      <a href="{% url 'password_change' %}" class="hidden text-sm text-gray-500 hover:text-gray-900 hover:underline sm:inline">{{ request.user.display_name }}</a>
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
         <button type="submit" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100">Log out</button>

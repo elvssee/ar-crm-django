@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Invitation unavailable · Architecture CRM{% endblock %}
+{% block body %}
+<main class="flex min-h-screen items-center justify-center px-6 py-12">
+  <div class="w-full max-w-md text-center">
+    <h1 class="text-2xl font-semibold tracking-tight">This invitation is no longer valid</h1>
+    <p class="mt-3 text-sm text-gray-600">The link may have been used already, or it expired. Ask your firm's admin to send you a new one.</p>
+    <a href="{% url 'login' %}" class="mt-8 inline-block text-sm font-semibold text-emerald-800 underline">Go to login</a>
+  </div>
+</main>
+{% endblock %}

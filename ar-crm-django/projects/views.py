@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -110,7 +110,13 @@ def project_delete(request, pk):
     project = get_object_or_404(firm_projects(request), pk=pk)
     if request.method == "POST":
         title = project.title
-        project.delete()
+        try:
+            project.delete()
+        except ProtectedError:
+            messages.error(
+                request, f"{title} still has drawings. Delete its drawings first."
+            )
+            return redirect("project_list")
         messages.success(request, f"{title} was deleted.")
         return redirect("project_list")
     return render(request, "projects/project_confirm_delete.html", {"project": project})

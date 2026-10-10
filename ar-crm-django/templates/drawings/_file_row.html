@@ -1,0 +1,13 @@
+<li class="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-100 bg-stone-50 px-3 py-2">
+  <div class="flex min-w-0 items-center gap-3">
+    <span class="rounded bg-gray-800 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">{{ file.type_label }}</span>
+    <span class="truncate text-sm">{{ file.original_name }}</span>
+    <span class="text-xs text-gray-500">{{ file.size|filesizeformat }}</span>
+  </div>
+  <div class="flex gap-4 text-sm font-semibold">
+    {% if file.is_previewable %}
+      <a class="text-emerald-800 hover:underline" href="{% url 'drawing_file' file.pk %}" target="_blank" rel="noopener">View</a>
+    {% endif %}
+    <a class="text-emerald-800 hover:underline" href="{% url 'drawing_file' file.pk %}?download=1">Download</a>
+  </div>
+</li>

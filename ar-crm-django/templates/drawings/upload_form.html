@@ -1,0 +1,32 @@
+{% extends "app_base.html" %}
+{% block title %}Upload drawings · Architecture CRM{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+  <a href="{% url 'project_drawings' project.pk %}" class="text-sm text-gray-600 hover:underline">&larr; {{ project.title }}</a>
+  <h1 class="mt-3 text-3xl font-semibold tracking-tight">Upload drawings</h1>
+  <p class="mt-2 text-sm text-gray-600">For {{ project.title }} · {{ project.client.name }}</p>
+
+  <form method="post" enctype="multipart/form-data" class="mt-8 space-y-5">
+    {% csrf_token %}
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium">{{ field.label }}</label>
+        {{ field }}
+        {% if field.name == 'files' %}
+          <p class="mt-2 text-xs text-gray-500">
+            You can select several files at once (for example a DWG together with a PDF of the same sheet, so it can be previewed on a phone). Up to {{ max_mb }} MB each.
+          </p>
+        {% endif %}
+        {% for error in field.errors %}
+          <p class="mt-1 text-sm text-red-700" role="alert">{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <div class="flex items-center gap-4 pt-2">
+      <button type="submit" class="rounded bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Upload</button>
+      <a href="{% url 'project_drawings' project.pk %}" class="text-sm text-gray-600 underline">Cancel</a>
+    </div>
+    <p class="text-xs text-gray-500">Large files can take a while on a slow connection. Keep this page open until it finishes.</p>
+  </form>
+</div>
+{% endblock %}

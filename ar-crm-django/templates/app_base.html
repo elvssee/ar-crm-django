@@ -11,6 +11,8 @@
            class="{% if '/clients/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Clients</a>
         <a href="{% url 'project_list' %}"
            class="{% if '/projects/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Projects</a>
+        <a href="{% url 'drawing_feed' %}"
+           class="{% if '/drawings/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Drawings</a>
         {% if request.user.is_firm_admin %}
         <a href="{% url 'team_list' %}"
            class="{% if '/team/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Team</a>

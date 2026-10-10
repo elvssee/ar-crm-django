@@ -4,7 +4,7 @@
   <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
     <div class="flex flex-wrap items-center gap-x-8 gap-y-2">
       <span class="text-sm font-bold tracking-wide text-emerald-900">ARCHITECTURE CRM</span>
-      <nav class="flex gap-5 text-sm font-medium">
+      <nav class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
         <a href="{% url 'dashboard' %}"
            class="{% if request.path == '/' %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Dashboard</a>
         <a href="{% url 'client_list' %}"
@@ -15,6 +15,10 @@
            class="{% if '/drawings/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Drawings</a>
         <a href="{% url 'discussion_inbox' %}"
            class="{% if '/discussion' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Discussions{% if unread_total %}<span class="ml-1 rounded-full bg-emerald-700 px-1.5 py-0.5 align-middle text-[10px] font-bold text-white">{{ unread_total }}</span>{% endif %}</a>
+        <a href="{% url 'activity_list' %}"
+           class="{% if '/activities/' in request.path or '/activity/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Activity</a>
+        <a href="{% url 'followup_list' %}"
+           class="{% if '/followups/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Follow-ups</a>
         {% if request.user.is_firm_admin %}
         <a href="{% url 'team_list' %}"
            class="{% if '/team/' in request.path %}text-emerald-800 underline underline-offset-8{% else %}text-gray-600 hover:text-gray-900{% endif %}">Team</a>

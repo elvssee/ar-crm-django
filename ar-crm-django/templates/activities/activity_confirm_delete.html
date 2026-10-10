@@ -1,0 +1,14 @@
+{% extends "app_base.html" %}
+{% block title %}Delete activity · Architecture CRM{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+  <h1 class="text-3xl font-semibold tracking-tight">Delete activity</h1>
+  <p class="mt-4 text-sm text-gray-700">Delete <strong>{{ activity.summary }}</strong> ({{ activity.occurred_on|date:"d M Y" }})? This cannot be undone.</p>
+  <form method="post" class="mt-8 flex items-center gap-4">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="rounded bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800">Yes, delete</button>
+    <a href="{% if next %}{{ next }}{% else %}{% url 'activity_list' %}{% endif %}" class="text-sm text-gray-600 underline">Cancel</a>
+  </form>
+</div>
+{% endblock %}

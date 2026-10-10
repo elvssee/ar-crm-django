@@ -22,7 +22,8 @@ INSTALLED_APPS = [
     "clients" ,
     "projects" ,
     "drawings" ,
-    "discussions"
+    "discussions" ,
+    "activities" ,
 ]
 
 MIDDLEWARE = [

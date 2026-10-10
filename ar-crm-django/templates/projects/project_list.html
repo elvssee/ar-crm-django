@@ -54,7 +54,8 @@
         <td class="px-4 py-3 text-gray-600">{% if project.estimated_fee %}₹{{ project.estimated_fee|floatformat:"0g" }}{% else %}—{% endif %}</td>
         <td class="px-4 py-3 text-gray-600">{{ project.start_date|date:"d M Y"|default:"—" }}</td>
         <td class="whitespace-nowrap px-4 py-3 text-right">
-          <a class="font-semibold text-emerald-800 hover:underline" href="{% url 'project_discussion' project.pk %}">Discussion</a>
+          <a class="font-semibold text-emerald-800 hover:underline" href="{% url 'project_activity' project.pk %}">Activity</a>
+          <a class="ml-4 font-semibold text-emerald-800 hover:underline" href="{% url 'project_discussion' project.pk %}">Discussion</a>
           <a class="ml-4 font-semibold text-emerald-800 hover:underline" href="{% url 'project_drawings' project.pk %}">Drawings</a>
           <a class="ml-4 font-semibold text-emerald-800 hover:underline" href="{% url 'project_edit' project.pk %}">Edit</a>
           <a class="ml-4 font-semibold text-red-700 hover:underline" href="{% url 'project_delete' project.pk %}">Delete</a>

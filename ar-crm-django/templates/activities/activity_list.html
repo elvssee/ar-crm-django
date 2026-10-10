@@ -1,0 +1,42 @@
+{% extends "app_base.html" %}
+{% block title %}Activity · Architecture CRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight">Activity</h1>
+    <p class="mt-1 text-sm text-gray-600">Calls, meetings, site visits and notes. {{ page.paginator.count }} entr{{ page.paginator.count|pluralize:"y,ies" }}</p>
+  </div>
+  <a href="{% url 'activity_create' %}{% if client_id %}?client={{ client_id }}{% endif %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Log activity</a>
+</div>
+
+<form method="get" class="mt-6 flex flex-wrap items-center gap-3">
+  <select name="client" class="rounded border border-gray-300 bg-white px-3 py-2.5 text-sm">
+    <option value="">All clients</option>
+    {% for client in clients %}<option value="{{ client.pk }}" {% if client.pk == client_id %}selected{% endif %}>{{ client.name }}</option>{% endfor %}
+  </select>
+  <select name="kind" class="rounded border border-gray-300 bg-white px-3 py-2.5 text-sm">
+    <option value="">All types</option>
+    {% for value, label in kinds %}<option value="{{ value }}" {% if value == kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Filter</button>
+  {% if client_id or kind %}<a href="{% url 'activity_list' %}" class="text-sm text-gray-600 underline">Clear</a>{% endif %}
+</form>
+
+{% if page.object_list %}
+<div class="mt-6 space-y-3">
+  {% for activity in page %}{% include "activities/_activity_row.html" with here=request.get_full_path %}{% endfor %}
+</div>
+{% if page.paginator.num_pages > 1 %}
+<div class="mt-6 flex items-center justify-between text-sm">
+  {% if page.has_previous %}<a class="font-semibold text-emerald-800 hover:underline" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}">&larr; Newer</a>{% else %}<span></span>{% endif %}
+  <span class="text-gray-500">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="font-semibold text-emerald-800 hover:underline" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}">Older &rarr;</a>{% else %}<span></span>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="mt-6 rounded border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
+  <p class="font-semibold">Nothing logged yet.</p>
+  <p class="mt-1 text-sm text-gray-600">Record the calls, meetings and site visits for your clients so nothing is forgotten.</p>
+</div>
+{% endif %}
+{% endblock %}

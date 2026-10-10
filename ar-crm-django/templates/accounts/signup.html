@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sign up · Architecture CRM{% endblock %}
+{% block body %}
+<main class="flex min-h-screen items-center justify-center px-6 py-12">
+  <div class="w-full max-w-md">
+    <p class="text-sm font-semibold text-emerald-800">ARCHITECTURE CRM</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight">Start your workspace</h1>
+    <p class="mt-2 text-sm text-gray-600">Create an account for you and your firm.</p>
+
+    <form method="post" class="mt-8 space-y-5">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p class="mt-1 text-sm text-red-700" role="alert">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="w-full rounded bg-emerald-800 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-900">Create workspace</button>
+    </form>
+
+    <p class="mt-7 text-center text-sm text-gray-600">
+      Already have an account? <a class="font-semibold text-emerald-800 underline" href="{% url 'login' %}">Sign in</a>
+    </p>
+  </div>
+</main>
+{% endblock %}

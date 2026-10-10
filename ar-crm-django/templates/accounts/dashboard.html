@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Architecture CRM{% endblock %}
+{% block body %}
+<header class="border-b border-gray-200 bg-white">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <span class="text-sm font-bold tracking-wide text-emerald-900">ARCHITECTURE CRM</span>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-100">Log out</button>
+    </form>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-6 py-16">
+  <p class="text-xs font-bold uppercase tracking-widest text-emerald-800">Firm workspace</p>
+  <h1 class="mt-3 text-4xl font-semibold tracking-tight">{{ firm.name|default:"No firm assigned" }}</h1>
+  <div class="mt-6 border-l-2 border-emerald-700 pl-4 text-sm text-gray-600">
+    <p class="font-semibold text-gray-900">{{ request.user.email }}</p>
+    <p>{{ request.user.get_role_display }}</p>
+  </div>
+  <p class="mt-12 text-sm text-gray-500">Your workspace is ready. Clients and projects come next.</p>
+</main>
+{% endblock %}

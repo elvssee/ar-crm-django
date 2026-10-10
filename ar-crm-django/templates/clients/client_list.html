@@ -1,0 +1,55 @@
+{% extends "app_base.html" %}
+{% block title %}Clients · Architecture CRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight">Clients</h1>
+    <p class="mt-1 text-sm text-gray-600">{{ clients|length }} client{{ clients|length|pluralize }}{% if q %} matching “{{ q }}”{% endif %}</p>
+  </div>
+  <a href="{% url 'client_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add client</a>
+</div>
+
+<form method="get" class="mt-6 flex gap-3">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search by name, email or phone"
+         class="block w-full max-w-md rounded border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20">
+  <button type="submit" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Search</button>
+  {% if q %}<a href="{% url 'client_list' %}" class="self-center text-sm text-gray-600 underline">Clear</a>{% endif %}
+</form>
+
+{% if clients %}
+<div class="mt-6 overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-left text-sm">
+    <thead class="border-b border-gray-200 bg-stone-50 text-xs uppercase tracking-wide text-gray-500">
+      <tr>
+        <th class="px-4 py-3">Name</th>
+        <th class="px-4 py-3">Phone</th>
+        <th class="px-4 py-3">Email</th>
+        <th class="px-4 py-3">Source</th>
+        <th class="px-4 py-3">Added</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for client in clients %}
+      <tr>
+        <td class="px-4 py-3 font-medium"><a class="hover:underline" href="{% url 'client_edit' client.pk %}">{{ client.name }}</a></td>
+        <td class="px-4 py-3 text-gray-600">{{ client.phone|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ client.email|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ client.get_source_display|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ client.created_at|date:"d M Y" }}</td>
+        <td class="whitespace-nowrap px-4 py-3 text-right">
+          <a class="font-semibold text-emerald-800 hover:underline" href="{% url 'client_edit' client.pk %}">Edit</a>
+          <a class="ml-4 font-semibold text-red-700 hover:underline" href="{% url 'client_delete' client.pk %}">Delete</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="mt-6 rounded border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
+  <p class="font-semibold">{% if q %}No clients match your search.{% else %}No clients yet.{% endif %}</p>
+  {% if not q %}<p class="mt-1 text-sm text-gray-600">Add your first client to get started.</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

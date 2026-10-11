@@ -127,13 +127,73 @@ class ActivityLogTests(ActivityTestCase):
         response = self.log(next="https://evil.example/steal", summary="Second")
         self.assertRedirects(response, reverse("activity_list"))
 
-    def test_project_page_shows_history_and_followups(self):
+    def test_project_activity_page_shows_history_only(self):
         self.make_activity(summary="Site measured")
         self.make_followup(note="Chase the survey")
         self.login("junior@alpha.example")
         response = self.client.get(reverse("project_activity", args=[self.villa.pk]))
         self.assertContains(response, "Site measured")
-        self.assertContains(response, "Chase the survey")
+        self.assertNotContains(response, "Chase the survey")
+        self.assertContains(response, reverse("project_followups", args=[self.villa.pk]))
+        self.assertContains(response, reverse("project_activity_create", args=[self.villa.pk]))
+
+
+class ProjectActivityLogTests(ActivityTestCase):
+    def url(self, project=None):
+        return reverse("project_activity_create", args=[(project or self.villa).pk])
+
+    def test_form_shows_the_project_as_heading_and_has_no_project_or_client_field(self):
+        self.login("junior@alpha.example")
+        response = self.client.get(self.url())
+        self.assertContains(response, "Nair villa")
+        self.assertContains(response, "Mr Nair")
+        self.assertNotIn("project", response.context["form"].fields)
+        self.assertNotIn("client", response.context["form"].fields)
+
+    def test_activity_is_saved_to_this_project_and_its_client(self):
+        self.login("junior@alpha.example")
+        project_page = reverse("project_activity", args=[self.villa.pk])
+        response = self.client.post(self.url(), {
+            "kind": "call", "summary": "Called about the plan", "details": "",
+            "occurred_on": self.today.isoformat(), "next": project_page,
+            # attempts to point it somewhere else are ignored
+            "project": self.clinic.pk, "client": self.menon.pk,
+        })
+        self.assertRedirects(response, project_page)
+        activity = Activity.objects.get()
+        self.assertEqual(activity.project, self.villa)
+        self.assertEqual(activity.client, self.nair)
+        self.assertEqual(activity.firm, self.firm)
+        self.assertEqual(activity.created_by, self.junior)
+
+    def test_default_redirect_is_the_project_page(self):
+        self.login("junior@alpha.example")
+        response = self.client.post(self.url(), {
+            "kind": "note", "summary": "Quick note", "occurred_on": self.today.isoformat(),
+        })
+        self.assertRedirects(response, reverse("project_activity", args=[self.villa.pk]))
+
+    def test_other_firms_project_is_404(self):
+        self.login("junior@alpha.example")
+        self.assertEqual(self.client.get(self.url(self.other_project)).status_code, 404)
+        self.assertEqual(self.client.post(self.url(self.other_project), {
+            "kind": "call", "summary": "x", "occurred_on": self.today.isoformat(),
+        }).status_code, 404)
+        self.assertEqual(Activity.objects.count(), 0)
+
+    def test_editing_a_project_activity_keeps_its_project(self):
+        activity = self.make_activity(created_by=self.junior)
+        self.login("junior@alpha.example")
+        response = self.client.get(reverse("activity_edit", args=[activity.pk]))
+        self.assertNotIn("project", response.context["form"].fields)
+        self.client.post(reverse("activity_edit", args=[activity.pk]), {
+            "kind": "meeting", "summary": "Moved", "occurred_on": self.today.isoformat(),
+            "project": self.clinic.pk, "client": self.menon.pk,
+        })
+        activity.refresh_from_db()
+        self.assertEqual(activity.kind, "meeting")
+        self.assertEqual(activity.project, self.villa)
+        self.assertEqual(activity.client, self.nair)
 
 
 class ActivityPermissionTests(ActivityTestCase):
@@ -164,19 +224,20 @@ class ActivityPermissionTests(ActivityTestCase):
 
 
 class FollowUpTests(ActivityTestCase):
-    def create(self, **overrides):
+    def create(self, project=None, **overrides):
         data = {
-            "project": self.villa.pk, "note": "Send revised quote",
+            "note": "Send revised quote",
             "due_date": self.today.isoformat(), "assigned_to": self.junior.pk,
         }
         data.update(overrides)
-        return self.client.post(reverse("followup_create"), data)
+        return self.client.post(reverse("project_followup_create", args=[(project or self.villa).pk]), data)
 
     def test_create_followup(self):
         self.login("boss@alpha.example")
         response = self.create()
-        self.assertRedirects(response, reverse("followup_list"))
+        self.assertRedirects(response, reverse("project_followups", args=[self.villa.pk]))
         followup = FollowUp.objects.get()
+        self.assertEqual(followup.project, self.villa)
         self.assertEqual(followup.firm, self.firm)
         self.assertEqual(followup.created_by, self.admin)
         self.assertEqual(followup.assigned_to, self.junior)
@@ -188,8 +249,79 @@ class FollowUpTests(ActivityTestCase):
 
     def test_cannot_use_another_firms_project(self):
         self.login("boss@alpha.example")
-        self.create(project=self.other_project.pk)
+        response = self.create(project=self.other_project)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual(FollowUp.objects.count(), 0)
+
+    def test_project_cannot_be_changed_from_the_form(self):
+        self.login("boss@alpha.example")
+        response = self.client.get(reverse("project_followup_create", args=[self.villa.pk]))
+        self.assertContains(response, "Nair villa")
+        self.assertNotIn("project", response.context["form"].fields)
+        self.client.post(reverse("project_followup_create", args=[self.villa.pk]), {
+            "note": "Sneaky", "due_date": self.today.isoformat(), "assigned_to": self.junior.pk,
+            "project": self.clinic.pk,  # an attempt to point it at another project is ignored
+        })
+        self.assertEqual(FollowUp.objects.get().project, self.villa)
+
+    def test_editing_keeps_the_project(self):
+        followup = self.make_followup(assigned_to=self.junior)
+        self.login("boss@alpha.example")
+        response = self.client.get(reverse("followup_edit", args=[followup.pk]))
+        self.assertNotIn("project", response.context["form"].fields)
+        response = self.client.post(reverse("followup_edit", args=[followup.pk]), {
+            "note": "Changed note", "due_date": self.today.isoformat(), "assigned_to": self.junior.pk,
+            "project": self.clinic.pk,
+        })
+        self.assertRedirects(response, reverse("project_followups", args=[self.villa.pk]))
+        followup.refresh_from_db()
+        self.assertEqual(followup.note, "Changed note")
+        self.assertEqual(followup.project, self.villa)
+
+    def test_project_page_lists_only_that_projects_followups(self):
+        self.make_followup(note="Villa task")
+        self.make_followup(note="Clinic task", project=self.clinic)
+        done = self.make_followup(note="Villa finished task")
+        self.login("junior@alpha.example")
+        self.client.post(reverse("followup_toggle", args=[done.pk]))
+        response = self.client.get(reverse("project_followups", args=[self.villa.pk]))
+        self.assertContains(response, "Nair villa")
+        self.assertContains(response, "Villa task")
+        self.assertContains(response, "Villa finished task")
+        self.assertContains(response, "Add follow-up")
+        self.assertNotContains(response, "Clinic task")
+
+    def test_toggle_and_delete_return_to_the_projects_page(self):
+        followup = self.make_followup(assigned_to=self.junior)
+        self.login("junior@alpha.example")
+        page = reverse("project_followups", args=[self.villa.pk])
+        self.assertRedirects(self.client.post(reverse("followup_toggle", args=[followup.pk])), page)
+        self.assertRedirects(self.client.post(reverse("followup_delete", args=[followup.pk])), page)
+
+    def test_other_firm_cannot_open_the_project_followup_pages(self):
+        self.login("boss@beta.example")
+        self.assertEqual(self.client.get(reverse("project_followups", args=[self.villa.pk])).status_code, 404)
+        self.assertEqual(
+            self.client.get(reverse("project_followup_create", args=[self.villa.pk])).status_code, 404
+        )
+
+    def test_all_projects_list_has_no_add_button_and_no_global_create_page(self):
+        self.login("boss@alpha.example")
+        self.assertNotContains(self.client.get(reverse("followup_list")), "Add follow-up")
+        self.assertEqual(self.client.get("/followups/new/").status_code, 404)
+
+
+class NavigationTests(ActivityTestCase):
+    def test_top_bar_has_no_followups_tab_but_project_rows_link_to_followups(self):
+        self.login("boss@alpha.example")
+        response = self.client.get(reverse("project_list"))
+        self.assertNotContains(response, 'href="%s"' % reverse("followup_list"))
+        self.assertContains(response, reverse("project_followups", args=[self.villa.pk]))
+
+    def test_dashboard_still_links_to_the_all_projects_followup_list(self):
+        self.make_followup(assigned_to=self.admin, due=self.today)
+        self.login("boss@alpha.example")
+        self.assertContains(self.client.get(reverse("dashboard")), reverse("followup_list"))
 
     def test_overdue_and_due_today_flags(self):
         overdue = self.make_followup(due=self.today - timedelta(days=2))

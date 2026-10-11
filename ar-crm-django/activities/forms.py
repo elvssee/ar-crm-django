@@ -46,16 +46,32 @@ class ActivityForm(forms.ModelForm):
         return cleaned
 
 
+class ProjectActivityForm(forms.ModelForm):
+    """Logging an activity from a project's own page: the project (and its client) are fixed by the view."""
+
+    class Meta:
+        model = Activity
+        fields = ["kind", "summary", "details", "occurred_on"]
+        widgets = {
+            "details": forms.Textarea(attrs={"rows": 4}),
+            "occurred_on": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        style_fields(self)
+
+
 class FollowUpForm(forms.ModelForm):
+    """The project is never a field: it comes from the project page the person is on."""
+
     class Meta:
         model = FollowUp
-        fields = ["project", "note", "due_date", "assigned_to"]
+        fields = ["note", "due_date", "assigned_to"]
         widgets = {"due_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
 
     def __init__(self, *args, firm, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["project"].queryset = Project.objects.filter(firm=firm).select_related("client")
-        self.fields["project"].empty_label = "Select a project"
         self.fields["assigned_to"].queryset = User.objects.filter(firm=firm, is_active=True)
         self.fields["assigned_to"].empty_label = "Select a person"
         self.fields["assigned_to"].required = True

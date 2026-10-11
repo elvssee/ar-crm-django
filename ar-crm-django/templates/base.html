@@ -3,10 +3,325 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Architecture CRM{% endblock %}</title>
+  <title>{% block title %}archdo.{% endblock %}</title>
+  <script>
+    // Apply the saved (or system) theme and motion choice before the page paints.
+    (function () {
+      var r = document.documentElement;
+      function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+      var theme = get('archdo-theme');
+      if (theme === 'dark' || (theme !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) r.classList.add('dark');
+      var motion = get('archdo-motion');
+      if (motion === 'reduced' || (motion !== 'full' && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) r.classList.add('reduce-motion');
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Accent color of the whole app. The name "emerald" is kept so no other file changes.
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              50:  '#f6f0e9',   // very light tint (success messages)
+              100: '#EAE0D5',   // light badge background (cream)
+              200: '#d8c5ab',   // light borders
+              700: '#5E503F',   // bars, NEW badges, hover borders (brown)
+              800: '#22333B',   // buttons, links, active menu (dark slate)
+              900: '#0A0908'    // button hover (near black)
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scrollbar-gutter: stable; }
+    @supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
+    body {
+      color: #0A0908;
+      background-color: #EAE0D5;
+      background-image: linear-gradient(
+        160deg,
+        rgba(198, 172, 142, 0.55) 0%,
+        rgba(198, 172, 142, 0.18) 35%,
+        rgba(234, 224, 213, 0) 65%
+      );
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-attachment: fixed;
+    }
+  </style>
+  <style>
+    /* archdo. intro animation (plays on every full page load) */
+    :root { --intro-bg: #EAE0D5; --intro-fg: #0A0908; --intro-accent: #5E503F; }
+    html.dark { --intro-bg: #14110F; --intro-fg: #EAE0D5; --intro-accent: #C6AC8E; }
+    #archdo-intro { display: none; position: fixed; inset: 0; z-index: 99999;
+      align-items: center; justify-content: center; background: var(--intro-bg); }
+    html.intro-on { overflow: hidden; }
+    html.intro-on #archdo-intro { display: flex; }
+    html.intro-on [data-brand-target] { visibility: hidden; }
+    #archdo-intro .wm { display: inline-flex; font-size: clamp(40px, 9vw, 72px); font-weight: 600;
+      line-height: 1.1; letter-spacing: -0.02em; color: var(--intro-fg); white-space: nowrap; transform-origin: 0 0; }
+    #archdo-intro .wm .a { position: relative; z-index: 2; background: var(--intro-bg); }
+    #archdo-intro .wm .d { position: relative; z-index: 1; color: var(--intro-accent); }
+    /* Staged fade-in right after signing in: firm heading first, everything else 0.5s later. */
+    @keyframes archdo-fade { from { opacity: 0; } to { opacity: 1; } }
+    .fade-first { opacity: 0; animation: archdo-fade .6s ease .1s forwards; }
+    .fade-rest  { opacity: 0; animation: archdo-fade .7s ease .6s forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-first, .fade-rest { opacity: 1; animation: none; }
+    }
+    /* ---------- Click and page animations (short and subtle) ---------- */
+    @keyframes archdo-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes archdo-slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+    @keyframes archdo-spin { to { transform: rotate(360deg); } }
+    main { animation: archdo-page-in .28s ease backwards; }
+    html.leaving main { opacity: 0; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease; }
+    :where(a[class*="bg-emerald-800"], a[class*="border-gray-300"][class*="rounded"]) { display: inline-block; }
+    button, :where(a[class*="bg-emerald-800"], a[class*="border-gray-300"][class*="rounded"]) {
+      transition: transform .12s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
+    button:not(:disabled):active,
+    a[class*="bg-emerald-800"]:active,
+    a[class*="border-gray-300"][class*="rounded"]:active { transform: scale(.97); }
+    a[class*="hover:border-emerald-700"] { transition: transform .18s ease, box-shadow .18s ease, border-color .15s ease; }
+    a[class*="hover:border-emerald-700"]:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(10, 9, 8, .08); }
+    a[class*="hover:border-emerald-700"]:active { transform: scale(.99); }
+    .flash-msg { animation: archdo-slide-down .35s ease backwards; }
+    .flash-msg.msg-out { opacity: 0; transform: translateY(-6px); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0;
+      overflow: hidden; border-width: 0; transition: all .4s ease; }
+    .btn-spinner { display: inline-block; width: .9em; height: .9em; margin-right: .5em; vertical-align: -.1em;
+      border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: archdo-spin .7s linear infinite; }
+    button.is-loading { pointer-events: none; opacity: .85; }
+    .icon-sun, .icon-motion-off { display: none; }
+    html.dark .icon-sun { display: inline; }  html.dark .icon-moon { display: none; }
+    html.reduce-motion .icon-motion-off { display: inline; }  html.reduce-motion .icon-motion-on { display: none; }
+
+    /* Reduce motion: the OS setting or the switch in the top bar turns every animation off. */
+    html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+      animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    html.reduce-motion .fade-first, html.reduce-motion .fade-rest { opacity: 1; }
+    html.reduce-motion .btn-spinner { animation: archdo-spin 1.6s linear infinite !important; }
+
+    /* ---------- Dark mode ---------- */
+    html.dark { color-scheme: dark; }
+    html.dark body { color: #EAE0D5; background-color: #14110F;
+      background-image: linear-gradient(160deg, rgba(94, 80, 63, .40) 0%, rgba(94, 80, 63, .12) 35%, rgba(20, 17, 15, 0) 65%); }
+    html.dark .bg-white { background-color: #1D1916 !important; }
+    html.dark .bg-stone-50 { background-color: #221D19 !important; }
+    html.dark .bg-stone-100 { background-color: #26201C !important; }
+    html.dark .bg-gray-100 { background-color: #2A2420 !important; }
+    html.dark .bg-gray-400 { background-color: #5A5047 !important; }
+    html.dark .bg-gray-800 { background-color: #3A332C !important; }
+    html.dark .bg-emerald-50 { background-color: #241F1A !important; }
+    html.dark .bg-emerald-100 { background-color: #2C2620 !important; }
+    html.dark .bg-emerald-700 { background-color: #8A7658 !important; }
+    html.dark .bg-emerald-800 { background-color: #2F4651 !important; }
+    html.dark .bg-red-50 { background-color: #3A1F1F !important; }
+    html.dark .bg-red-100 { background-color: #4A2626 !important; }
+    html.dark .bg-red-700 { background-color: #B43C3C !important; }
+    html.dark .border-gray-100, html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #2A2420 !important; }
+    html.dark .border-gray-200, html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #332C26 !important; }
+    html.dark .border-gray-300 { border-color: #453D35 !important; }
+    html.dark .border-emerald-200 { border-color: #4A3F33 !important; }
+    html.dark .border-emerald-800 { border-color: #2F4651 !important; }
+    html.dark .border-red-200 { border-color: #6B3030 !important; }
+    html.dark .text-gray-900 { color: #F3ECE4 !important; }
+    html.dark .text-gray-800 { color: #E3D9CD !important; }
+    html.dark .text-gray-700 { color: #CFC3B4 !important; }
+    html.dark .text-gray-600 { color: #B5A897 !important; }
+    html.dark .text-gray-500 { color: #9A8D7D !important; }
+    html.dark .text-gray-400 { color: #7D7164 !important; }
+    html.dark .text-emerald-700, html.dark .text-emerald-800 { color: #C6AC8E !important; }
+    html.dark .text-emerald-900 { color: #EAE0D5 !important; }
+    html.dark .text-red-700 { color: #F08A8A !important; }
+    html.dark .text-red-800 { color: #F4A3A3 !important; }
+    html.dark .hover\:bg-gray-100:hover, html.dark .hover\:bg-gray-50:hover { background-color: #2A2420 !important; }
+    html.dark .hover\:bg-stone-50:hover, html.dark .hover\:bg-emerald-50:hover { background-color: #26201C !important; }
+    html.dark .hover\:bg-emerald-900:hover { background-color: #3A5865 !important; }
+    html.dark .hover\:bg-red-800:hover { background-color: #C24848 !important; }
+    html.dark .hover\:text-gray-900:hover { color: #F3ECE4 !important; }
+    html.dark .hover\:border-emerald-700:hover, html.dark .focus\:border-emerald-700:focus { border-color: #C6AC8E !important; }
+    html.dark .focus\:ring-emerald-700\/20:focus { --tw-ring-color: rgba(198, 172, 142, .25); }
+    html.dark .ring-emerald-600 { --tw-ring-color: #C6AC8E; }
+    html.dark input, html.dark select, html.dark textarea { color: #EAE0D5; }
+    html.dark #discussion-panel { background: #1D1916; border-left-color: #332C26; box-shadow: -10px 0 30px rgba(0, 0, 0, .5); }
+    html.dark a[class*="hover:border-emerald-700"]:hover { box-shadow: 0 8px 20px rgba(0, 0, 0, .45); }
+  </style>
+  <script>
+    // Decide, before the page paints, whether the intro should play.
+    // It plays (1) the first time the site is opened in this browser session, and
+    // (2) when the main page (dashboard or login) is reloaded. Never on normal
+    // navigation between pages, and not right after logging in.
+    (function () {
+      if (document.documentElement.classList.contains('reduce-motion')) return;
+      var seen = document.cookie.indexOf('archdo_intro=1') !== -1;
+      var nav = window.performance && performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      var isReload = !!nav && nav.type === 'reload';
+      var path = location.pathname;
+      var isMain = path === '/' || path === '{% url "login" %}';
+      if (!seen || (isReload && isMain)) {
+        // Session cookie (no expiry): forgotten when the browser is closed.
+        document.cookie = 'archdo_intro=1; path=/; SameSite=Lax';
+        document.documentElement.classList.add('intro-on');
+      }
+    })();
+  </script>
 </head>
-<body class="min-h-screen bg-stone-50 text-gray-900 antialiased">
+<body class="min-h-screen antialiased">
+  <div id="archdo-intro" aria-hidden="true">
+    <div class="wm" id="archdo-wm"><span class="a" id="archdo-a">arch</span><span class="d" id="archdo-d">do.</span></div>
+  </div>
   {% block body %}{% endblock %}
+  <script>
+    (function () {
+      var root = document.documentElement;
+      if (!root.classList.contains('intro-on')) return;
+
+      var overlay = document.getElementById('archdo-intro'),
+          wm = document.getElementById('archdo-wm'),
+          a = document.getElementById('archdo-a'),
+          d = document.getElementById('archdo-d'),
+          target = document.querySelector('[data-brand-target]'),
+          EASE = 'cubic-bezier(.65,0,.35,1)';
+
+      function finish() { root.classList.remove('intro-on'); }
+      setTimeout(finish, 6000); // safety net: never leave the page covered
+
+      // Match the corner label's weight and letter spacing so the landing is seamless.
+      if (target) {
+        var cs = getComputedStyle(target);
+        wm.style.fontWeight = cs.fontWeight;
+        if (cs.letterSpacing !== 'normal') {
+          wm.style.letterSpacing = (parseFloat(cs.letterSpacing) / parseFloat(cs.fontSize)) + 'em';
+        }
+      }
+
+      // Step 1: centered, "Do" hidden behind "Arch".
+      var wa = a.offsetWidth, wd = d.offsetWidth;
+      a.style.transform = 'translateX(' + (wd / 2) + 'px)';
+      d.style.transform = 'translateX(' + (-wa / 2) + 'px)';
+      void wm.offsetWidth;
+
+      // Step 2: Arch slides left, Do slides right.
+      setTimeout(function () {
+        a.style.transition = d.style.transition = 'transform .8s ' + EASE;
+        a.style.transform = d.style.transform = 'translateX(0)';
+      }, 900);
+
+      // Step 3: shrink into the top-left label and reveal the page.
+      setTimeout(function () {
+        a.style.background = 'transparent';
+        overlay.style.transition = 'background-color .9s ease';
+        overlay.style.background = 'transparent';
+        if (target) {
+          var w = wm.getBoundingClientRect(), t = target.getBoundingClientRect();
+          var s = t.width / w.width;
+          var dx = t.left - w.left;
+          var dy = (t.top + t.height / 2) - w.top - (s * w.height / 2);
+          wm.style.transition = 'transform .9s ' + EASE;
+          wm.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')';
+        } else {
+          wm.style.transition = 'opacity .9s ease, transform .9s ' + EASE;
+          wm.style.opacity = '0';
+          wm.style.transform = 'scale(.8)';
+        }
+      }, 2400);
+
+      // Done: the real label takes over.
+      setTimeout(finish, 3350);
+    })();
+  </script>
+  <script>
+    // Theme switch, reduce-motion switch, page fade on link clicks, button spinner, auto-hiding messages.
+    (function () {
+      var root = document.documentElement;
+      function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+      function sync() {
+        var t = document.getElementById('theme-toggle'), m = document.getElementById('motion-toggle');
+        if (t) t.setAttribute('aria-pressed', root.classList.contains('dark') ? 'true' : 'false');
+        if (m) m.setAttribute('aria-pressed', root.classList.contains('reduce-motion') ? 'true' : 'false');
+      }
+      var themeBtn = document.getElementById('theme-toggle'), motionBtn = document.getElementById('motion-toggle');
+      if (themeBtn) themeBtn.addEventListener('click', function () {
+        save('archdo-theme', root.classList.toggle('dark') ? 'dark' : 'light'); sync();
+      });
+      if (motionBtn) motionBtn.addEventListener('click', function () {
+        save('archdo-motion', root.classList.toggle('reduce-motion') ? 'reduced' : 'full'); sync();
+      });
+      sync();
+
+      // Fade the page content out for a moment before following a normal link.
+      document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (root.classList.contains('reduce-motion')) return;
+        var a = e.target.closest && e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (!href || href.charAt(0) === '#' || /^(javascript|mailto|tel):/i.test(href)) return;
+        if ((a.target && a.target !== '_self') || a.hasAttribute('download') || a.hasAttribute('data-no-transition')) return;
+        if (a.origin !== location.origin || /[?&]download=/.test(a.search)) return;
+        if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
+        e.preventDefault();
+        root.classList.add('leaving');
+        setTimeout(function () { location.href = a.href; }, 150);
+        setTimeout(function () { root.classList.remove('leaving'); }, 2500);
+      });
+
+      // Spinner on submit buttons, and no accidental double submit.
+      function resetForms() {
+        root.classList.remove('leaving');
+        document.querySelectorAll('form[data-submitting]').forEach(function (f) { delete f.dataset.submitting; });
+        document.querySelectorAll('.btn-spinner').forEach(function (s) { s.remove(); });
+        document.querySelectorAll('button.is-loading').forEach(function (b) { b.classList.remove('is-loading'); b.removeAttribute('aria-busy'); });
+      }
+      document.addEventListener('submit', function (e) {
+        if (e.defaultPrevented) return;            // cancelled confirm() or handled by the page's own script
+        var form = e.target;
+        if (form.hasAttribute('data-no-loading')) return;
+        if (form.dataset.submitting) { e.preventDefault(); return; }
+        form.dataset.submitting = '1';
+        var btn = e.submitter || form.querySelector('button[type=submit], button:not([type])');
+        if (btn && btn.tagName === 'BUTTON') {
+          btn.classList.add('is-loading');
+          btn.setAttribute('aria-busy', 'true');
+          btn.insertAdjacentHTML('afterbegin', '<span class="btn-spinner" aria-hidden="true"></span>');
+        }
+        setTimeout(resetForms, 30000);             // safety net, e.g. if the response is a file download
+      });
+      window.addEventListener('pageshow', function (e) { if (e.persisted) resetForms(); });
+
+      // Chat file picker: show the chosen file name, allow removing it.
+      function syncAttach(form) {
+        if (!form) return;
+        var input = form.querySelector('[data-attach-input]'), chip = form.querySelector('[data-attach-chip]');
+        if (!input || !chip) return;
+        var file = input.files && input.files[0];
+        chip.classList.toggle('hidden', !file);
+        chip.classList.toggle('flex', !!file);
+        var label = chip.querySelector('[data-attach-name]');
+        if (label) label.textContent = file ? file.name + ' · ' + (file.size < 1048576 ? Math.max(1, Math.round(file.size / 1024)) + ' KB' : (file.size / 1048576).toFixed(1) + ' MB') : '';
+      }
+      document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-attach-input]')) syncAttach(e.target.form);
+      });
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('[data-attach-clear]');
+        if (!btn) return;
+        var form = btn.closest('form'), input = form && form.querySelector('[data-attach-input]');
+        if (input) { input.value = ''; syncAttach(form); }
+      });
+      document.addEventListener('reset', function (e) { setTimeout(function () { syncAttach(e.target); }, 0); });
+
+      // Success / error messages leave on their own.
+      document.querySelectorAll('.flash-msg').forEach(function (m) {
+        setTimeout(function () {
+          m.classList.add('msg-out');
+          setTimeout(function () { m.remove(); }, 450);
+        }, m.getAttribute('role') === 'alert' ? 8000 : 5000);
+      });
+    })();
+  </script>
 </body>
 </html>

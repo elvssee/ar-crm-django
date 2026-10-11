@@ -1,8 +1,14 @@
 {% extends "app_base.html" %}
-{% block title %}{{ title }} · Architecture CRM{% endblock %}
+{% block title %}{{ title }} · archdo.{% endblock %}
 {% block content %}
 <div class="max-w-xl">
+  {% if project %}
+  <p class="text-xs font-bold uppercase tracking-widest text-emerald-800">{{ title }}</p>
+  <h1 class="mt-1 text-3xl font-semibold tracking-tight">{{ project.title }}</h1>
+  <p class="mt-1 text-sm text-gray-600">{{ project.client.name }}{% if project.site_location %} · {{ project.site_location }}{% endif %}</p>
+  {% else %}
   <h1 class="text-3xl font-semibold tracking-tight">{{ title }}</h1>
+  {% endif %}
   <form method="post" class="mt-8 space-y-5">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
@@ -15,7 +21,7 @@
     {% endfor %}
     <div class="flex items-center gap-4 pt-2">
       <button type="submit" class="rounded bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Save</button>
-      <a href="{% if next %}{{ next }}{% else %}{% url 'activity_list' %}{% endif %}" class="text-sm text-gray-600 underline">Cancel</a>
+      <a href="{% if next %}{{ next }}{% elif project %}{% url 'project_activity' project.pk %}{% else %}{% url 'activity_list' %}{% endif %}" class="text-sm text-gray-600 underline">Cancel</a>
     </div>
   </form>
 </div>

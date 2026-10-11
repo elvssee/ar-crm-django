@@ -7,13 +7,22 @@
       {% if message.is_new %}<span data-new-badge class="ml-1 rounded-full bg-emerald-700 px-2 py-0.5 text-[10px] font-semibold text-white">NEW</span>{% endif %}
     </p>
     {% if message.can_delete %}
-    <form method="post" action="{% url 'discussion_delete' message.pk %}" onsubmit="return confirm('Delete this message?');">
+    <form method="post" data-message-delete action="{% url 'discussion_delete' message.pk %}" onsubmit="return confirm('Delete this message?');">
       {% csrf_token %}
       <button type="submit" class="text-xs font-semibold text-red-700 hover:underline">Delete</button>
     </form>
     {% endif %}
   </div>
-  <p class="mt-1 whitespace-pre-line break-words text-sm text-gray-900">{{ message.body }}</p>
+  {% if message.body %}<p class="mt-1 whitespace-pre-line break-words text-sm text-gray-900">{{ message.body }}</p>{% endif %}
+  {% if message.attachment %}
+  <a href="{% url 'discussion_file' message.pk %}{% if not message.is_previewable %}?download=1{% endif %}"
+     {% if message.is_previewable %}target="_blank" rel="noopener"{% else %}data-no-transition{% endif %}
+     class="mt-2 flex max-w-full items-center gap-2 rounded border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-gray-50">
+    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+    <span class="min-w-0 truncate">{{ message.attachment_name }}</span>
+    <span class="shrink-0 font-normal text-gray-500">{{ message.type_label }} · {{ message.attachment_size|filesizeformat }}</span>
+  </a>
+  {% endif %}
   {% if message.drawing %}
   <a href="{% url 'project_drawings' message.drawing.project_id %}"
      class="mt-2 inline-flex items-center gap-2 rounded border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-gray-50">

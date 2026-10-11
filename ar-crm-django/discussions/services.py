@@ -21,11 +21,11 @@ def mark_seen(user, project):
 
 
 def unread_counts(user):
-    """{project_id: number of messages from other people that this user has not read}."""
+    """{None: number of team-chat messages from other people that this user has not read}."""
     seen = seen_map(user)
     baseline = user.date_joined
     rows = (
-        Message.objects.filter(firm_id=user.firm_id, created_at__gt=baseline)
+        Message.objects.filter(firm_id=user.firm_id, project__isnull=True, created_at__gt=baseline)
         .exclude(author=user)
         .values_list("project_id", "created_at")
     )

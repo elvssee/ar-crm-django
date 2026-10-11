@@ -52,14 +52,12 @@ def project_board(request):
                 "label": label,
                 "projects": items,
                 "count": len(items),
-                "total": sum((p.estimated_fee or 0) for p in items),
             }
         )
-    open_value = sum(c["total"] for c in columns if c["value"] != Project.STAGE_COMPLETED)
     return render(
         request,
         "projects/project_board.html",
-        {"columns": columns, "open_value": open_value, "total_projects": len(projects)},
+        {"columns": columns, "total_projects": len(projects)},
     )
 
 

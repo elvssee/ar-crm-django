@@ -1,12 +1,11 @@
 {% extends "app_base.html" %}
-{% block title %}Follow-ups · Architecture CRM{% endblock %}
+{% block title %}Follow-ups · archdo.{% endblock %}
 {% block content %}
 <div class="flex flex-wrap items-end justify-between gap-4">
   <div>
     <h1 class="text-3xl font-semibold tracking-tight">Follow-ups</h1>
     <p class="mt-1 text-sm text-gray-600">{{ total }} {% if status == 'done' %}completed{% else %}open{% endif %}</p>
   </div>
-  <a href="{% url 'followup_create' %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Add follow-up</a>
 </div>
 
 <div class="mt-6 flex flex-wrap gap-6 text-sm">

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Join {{ invitation.firm.name }} · Architecture CRM{% endblock %}
+{% block title %}Join {{ invitation.firm.name }} · archdo.{% endblock %}
 {% block body %}
 <main class="flex min-h-screen items-center justify-center px-6 py-12">
   <div class="w-full max-w-md">
-    <p class="text-sm font-semibold text-emerald-800">ARCHITECTURE CRM</p>
+    <p class="text-sm font-semibold text-emerald-800"><span data-brand-target>arch<span class="text-emerald-700">do.</span></span></p>
     <h1 class="mt-2 text-3xl font-semibold tracking-tight">Join {{ invitation.firm.name }}</h1>
     <p class="mt-2 text-sm text-gray-600">You have been invited as <strong>{{ invitation.get_role_display|lower }}</strong>. Choose a password to finish.</p>
 

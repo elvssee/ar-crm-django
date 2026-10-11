@@ -17,7 +17,7 @@ class ProjectForm(forms.ModelForm):
         model = Project
         fields = [
             "client", "title", "project_type", "site_location",
-            "area_sqft", "estimated_fee", "stage", "start_date",
+            "area_sqft", "stage", "start_date",
         ]
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),

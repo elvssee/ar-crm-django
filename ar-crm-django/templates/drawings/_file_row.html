@@ -8,6 +8,6 @@
     {% if file.is_previewable %}
       <a class="text-emerald-800 hover:underline" href="{% url 'drawing_file' file.pk %}" target="_blank" rel="noopener">View</a>
     {% endif %}
-    <a class="text-emerald-800 hover:underline" href="{% url 'drawing_file' file.pk %}?download=1">Download</a>
+    <a class="text-emerald-800 hover:underline" href="{% url 'drawing_file' file.pk %}?download=1" data-no-transition>Download</a>
   </div>
 </li>

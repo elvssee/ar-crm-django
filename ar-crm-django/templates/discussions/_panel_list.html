@@ -1,0 +1,52 @@
+<div data-unread-total="{{ total_unread }}" class="flex h-full flex-col">
+  <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+    <h2 class="text-lg font-semibold">Discussions</h2>
+    <button type="button" data-panel-close class="inline-flex items-center gap-1 rounded px-2 py-1 text-sm font-medium text-gray-600 hover:bg-emerald-50 hover:text-gray-900">
+      Close
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto">
+    <button type="button" data-room-url="{% url 'panel_general' %}" class="block w-full border-b border-gray-100 px-5 py-4 text-left hover:bg-stone-50">
+      <span class="flex items-start justify-between gap-3">
+        <span class="font-semibold">Team chat
+          {% if general.unread %}<span class="ml-2 rounded-full bg-emerald-700 px-2 py-0.5 align-middle text-[10px] font-semibold text-white">{{ general.unread }} new</span>{% endif %}
+        </span>
+        {% if general.latest %}<span class="shrink-0 text-xs text-gray-500">{{ general.latest.created_at|timesince }} ago</span>{% endif %}
+      </span>
+      <span class="mt-0.5 block text-xs text-gray-500">Everyone in your firm</span>
+      {% if general.latest %}
+      <span class="mt-1 block truncate text-sm text-gray-700"><span class="font-medium">{% if general.latest.author %}{{ general.latest.author.display_name }}{% else %}Former member{% endif %}:</span> {{ general.latest.body|default:general.latest.attachment_name }}</span>
+      {% endif %}
+    </button>
+
+    {% if projects %}
+    <p class="px-5 pb-1 pt-5 text-xs font-bold uppercase tracking-wide text-gray-500">Projects</p>
+    {% for project in projects %}
+    <button type="button" data-room-url="{% url 'panel_project' project.pk %}" class="block w-full border-b border-gray-100 px-5 py-3.5 text-left hover:bg-stone-50">
+      <span class="flex items-start justify-between gap-3">
+        <span class="font-semibold">{{ project.title }}
+          {% if project.unread %}<span class="ml-2 rounded-full bg-emerald-700 px-2 py-0.5 align-middle text-[10px] font-semibold text-white">{{ project.unread }} new</span>{% endif %}
+        </span>
+        <span class="shrink-0 text-xs text-gray-500">{{ project.last_message_at|timesince }} ago</span>
+      </span>
+      <span class="mt-0.5 block text-xs text-gray-500">{{ project.client.name }}</span>
+      {% if project.latest %}
+      <span class="mt-1 block truncate text-sm text-gray-700"><span class="font-medium">{% if project.latest.author %}{{ project.latest.author.display_name }}{% else %}Former member{% endif %}:</span> {{ project.latest.body|default:project.latest.attachment_name }}</span>
+      {% endif %}
+    </button>
+    {% endfor %}
+    {% endif %}
+
+    {% if idle_projects %}
+    <p class="px-5 pb-1 pt-5 text-xs font-bold uppercase tracking-wide text-gray-500">Start a conversation</p>
+    {% for project in idle_projects|slice:":30" %}
+    <button type="button" data-room-url="{% url 'panel_project' project.pk %}" class="block w-full border-b border-gray-100 px-5 py-3 text-left hover:bg-stone-50">
+      <span class="block text-sm font-medium">{{ project.title }}</span>
+      <span class="block text-xs text-gray-500">{{ project.client.name }}</span>
+    </button>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>

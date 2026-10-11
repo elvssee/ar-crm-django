@@ -1,10 +1,8 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-from django.utils import timezone
 
-from activities.models import FollowUp
-
+from .dashboard import build_dashboard
 from .forms import SignupForm
 
 
@@ -21,14 +19,10 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    context = {"firm": request.user.firm}
-    if request.user.firm_id:
-        today = timezone.localdate()
-        context["due_followups"] = list(
-            FollowUp.objects.filter(
-                firm=request.user.firm, assigned_to=request.user, done=False, due_date__lte=today
-            )
-            .select_related("project")
-            .order_by("due_date", "id")[:8]
-        )
+    # True only for the first dashboard shown after signing in (staged fade-in).
+    post_login = bool(request.session.pop("just_logged_in", False))
+    if request.user.firm_id is None:
+        return render(request, "accounts/dashboard.html", {"firm": None, "post_login": post_login})
+    context = build_dashboard(request.user)
+    context["post_login"] = post_login
     return render(request, "accounts/dashboard.html", context)

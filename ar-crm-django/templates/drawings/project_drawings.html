@@ -1,5 +1,5 @@
 {% extends "app_base.html" %}
-{% block title %}{{ project.title }} drawings · Architecture CRM{% endblock %}
+{% block title %}{{ project.title }} drawings · archdo.{% endblock %}
 {% block content %}
 <a href="{% url 'project_list' %}" class="text-sm text-gray-600 hover:underline">&larr; All projects</a>
 <div class="mt-3 flex flex-wrap items-end justify-between gap-4">
@@ -8,7 +8,6 @@
     <p class="mt-1 text-sm text-gray-600">{{ project.client.name }}{% if project.site_location %} · {{ project.site_location }}{% endif %} · {{ project.get_stage_display }}</p>
   </div>
   <div class="flex gap-3">
-    <a href="{% url 'project_discussion' project.pk %}" class="rounded border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-100">Discussion</a>
     <a href="{% url 'drawing_upload' project.pk %}" class="rounded bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Upload drawings</a>
   </div>
 </div>

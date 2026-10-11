@@ -1,0 +1,32 @@
+<div class="flex h-full flex-col">
+  <div class="flex items-start justify-between gap-3 border-b border-gray-200 px-5 py-4">
+    <div class="min-w-0">
+      <h2 class="truncate text-lg font-semibold">{{ room.title }}</h2>
+      <p class="truncate text-xs text-gray-500">{{ room.subtitle }}</p>
+    </div>
+    <div class="flex shrink-0 items-center gap-1">
+      <button type="button" data-panel-close aria-label="Close discussions" class="rounded p-1.5 text-gray-600 hover:bg-emerald-50 hover:text-gray-900">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div data-panel-scroll class="flex-1 overflow-y-auto px-4 py-4">
+    <div data-message-list data-poll-url="{{ room.poll_url }}" class="space-y-3">
+      {% for message in messages_list %}{% include "discussions/_message.html" %}{% endfor %}
+    </div>
+    <p data-empty-chat class="rounded border border-dashed border-gray-300 bg-white px-4 py-8 text-center text-sm text-gray-500 {% if messages_list %}hidden{% endif %}">No messages yet. Say hello below.</p>
+  </div>
+
+  <form data-send-form method="post" enctype="multipart/form-data" action="{{ room.send_url }}" class="space-y-2 border-t border-gray-200 bg-white p-3">
+    {% csrf_token %}
+    {{ form.body }}
+    {% include "discussions/_attach_chip.html" %}
+    <div class="flex items-center gap-2">
+      {% include "discussions/_attach_button.html" %}
+      <div class="flex-1"></div>
+      <button type="submit" class="rounded bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">Send</button>
+    </div>
+    <p class="text-[11px] text-gray-400">Enter to send, Shift+Enter for a new line.</p>
+  </form>
+</div>

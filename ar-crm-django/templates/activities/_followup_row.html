@@ -5,7 +5,7 @@
       <span class="{% if followup.is_overdue %}font-semibold text-red-700{% elif followup.is_due_today %}font-semibold text-emerald-800{% endif %}">
         {% if followup.is_overdue %}Overdue · {% elif followup.is_due_today %}Today · {% endif %}{{ followup.due_date|date:"d M Y" }}
       </span>
-      {% if show_project %}· <a class="hover:underline" href="{% url 'project_activity' followup.project_id %}">{{ followup.project.title }}</a> ({{ followup.project.client.name }}){% endif %}
+      {% if show_project %}· <a class="hover:underline" href="{% url 'project_followups' followup.project_id %}">{{ followup.project.title }}</a> ({{ followup.project.client.name }}){% endif %}
       · {% if followup.assigned_to %}{{ followup.assigned_to.display_name }}{% else %}Unassigned{% endif %}
     </p>
   </div>

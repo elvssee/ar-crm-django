@@ -1,0 +1,196 @@
+<style>
+  body { --panel-w: 420px; transition: padding-right .45s cubic-bezier(.65, 0, .35, 1); }
+  #discussion-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 60;
+    width: var(--panel-w); max-width: 100vw;
+    display: flex; flex-direction: column;
+    background: #fff; border-left: 1px solid #e5e7eb; box-shadow: -10px 0 30px rgba(10, 9, 8, 0.08);
+    transform: translateX(100%); visibility: hidden;
+    transition: transform .45s cubic-bezier(.65, 0, .35, 1), visibility 0s linear .45s;
+  }
+  body.panel-open #discussion-panel {
+    transform: translateX(0); visibility: visible;
+    transition: transform .45s cubic-bezier(.65, 0, .35, 1), visibility 0s;
+  }
+  /* The page makes room by shrinking the body's right padding (a number, so it animates smoothly). */
+  @media (min-width: 1024px) {
+    body.panel-open { padding-right: var(--panel-w); }
+  }
+  @media (max-width: 1023px) {
+    #discussion-panel { width: 100vw; }
+    body.panel-open { overflow: hidden; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #discussion-panel, body { transition: none !important; }
+  }
+</style>
+
+<aside id="discussion-panel" role="dialog" aria-label="Discussions" aria-hidden="true" tabindex="-1"
+       data-general-url="{% url 'panel_general' %}" data-unread-url="{% url 'discussion_unread' %}">
+  <div data-panel-body class="h-full"></div>
+</aside>
+
+<script>
+  (function () {
+    var panel = document.getElementById('discussion-panel');
+    if (!panel) { return; }
+    var body = panel.querySelector('[data-panel-body]');
+    var ajax = { 'X-Requested-With': 'XMLHttpRequest' };
+    var state = 'closed';
+    var pollTimer = null;
+    var openButton = null;
+
+    function setBadge(total) {
+      var n = parseInt(total, 10) || 0;
+      document.querySelectorAll('[data-unread-count]').forEach(function (el) {
+        el.textContent = n;
+        el.classList.toggle('hidden', n === 0);
+      });
+    }
+    function refreshBadge() {
+      fetch(panel.dataset.unreadUrl, { headers: ajax, credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) { if (data) { setBadge(data.total); } })
+        .catch(function () {});
+    }
+    function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+
+    function load(url, done) {
+      return fetch(url, { headers: ajax, credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) { throw new Error('bad status'); } return r.text(); })
+        .then(function (html) { body.innerHTML = html; if (done) { done(); } })
+        .catch(function () {
+          body.innerHTML = '<p class="p-6 text-sm text-red-700">Could not load discussions. Check your connection and try again.</p>' +
+            '<div class="px-6"><button type="button" data-panel-close class="text-sm font-semibold text-emerald-800 underline">Close</button></div>';
+        });
+    }
+
+    function messageList() { return body.querySelector('[data-message-list]'); }
+    function scroller() { return body.querySelector('[data-panel-scroll]'); }
+    function toBottom() { var s = scroller(); if (s) { s.scrollTop = s.scrollHeight; } }
+    function nearBottom() { var s = scroller(); return !s || (s.scrollHeight - s.scrollTop - s.clientHeight) < 160; }
+    function lastId(list) {
+      var items = list.querySelectorAll('[data-message-id]');
+      return items.length ? items[items.length - 1].dataset.messageId : 0;
+    }
+    function addMessages(html) {
+      var list = messageList();
+      if (!list) { return; }
+      var holder = document.createElement('div');
+      holder.innerHTML = html;
+      Array.prototype.slice.call(holder.children).forEach(function (el) {
+        var id = el.dataset.messageId;
+        if (id && !list.querySelector('[data-message-id="' + id + '"]')) { list.appendChild(el); }
+      });
+      var empty = body.querySelector('[data-empty-chat]');
+      if (empty) { empty.classList.add('hidden'); }
+    }
+
+    function poll() {
+      var list = messageList();
+      if (state !== 'room' || document.hidden || !list) { return; }
+      fetch(list.dataset.pollUrl + '?after=' + lastId(list), { headers: ajax, credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) {
+          if (html.trim()) {
+            var stick = nearBottom();
+            addMessages(html);
+            if (stick) { toBottom(); }
+          }
+        })
+        .catch(function () {});
+    }
+
+    function openRoom(url) {
+      stopPolling();
+      state = 'room';
+      load(url, function () {
+        toBottom();
+        var box = body.querySelector('[data-send-form] textarea');
+        if (box) { box.focus({ preventScroll: true }); }
+        pollTimer = setInterval(poll, 4000);
+        refreshBadge();
+      });
+    }
+
+    function sendMessage(form) {
+      var button = form.querySelector('button[type=submit]');
+      button.disabled = true;
+      fetch(form.action, { method: 'POST', body: new FormData(form), headers: ajax, credentials: 'same-origin' })
+        .then(function (r) {
+          return r.text().then(function (text) {
+            if (r.status === 201) { addMessages(text); form.reset(); toBottom(); }
+            else { alert(text || 'Could not send the message. Please try again.'); }
+          });
+        })
+        .catch(function () { alert('Could not send the message. Check your connection.'); })
+        .then(function () { button.disabled = false; });
+    }
+
+    function deleteMessage(form) {
+      fetch(form.action, { method: 'POST', body: new FormData(form), headers: ajax, credentials: 'same-origin' })
+        .then(function (r) {
+          if (r.ok) { var item = form.closest('[data-message-id]'); if (item) { item.remove(); } }
+          else { alert('Could not delete the message.'); }
+        })
+        .catch(function () { alert('Could not delete the message. Check your connection.'); });
+    }
+
+    function openPanel() {
+      if (state !== 'closed') { return; }
+      document.body.classList.add('panel-open');
+      panel.setAttribute('aria-hidden', 'false');
+      // Chat is with your own team only, so open the team chat straight away.
+      openRoom(panel.dataset.generalUrl);
+      panel.focus({ preventScroll: true });
+    }
+    function closePanel() {
+      if (state === 'closed') { return; }
+      stopPolling();
+      state = 'closed';
+      document.body.classList.remove('panel-open');
+      panel.setAttribute('aria-hidden', 'true');
+      refreshBadge();
+      if (openButton) { openButton.focus({ preventScroll: true }); }
+    }
+
+    document.querySelectorAll('[data-panel-open]').forEach(function (button) {
+      button.addEventListener('click', function () { openButton = button; openPanel(); });
+    });
+
+    panel.addEventListener('click', function (event) {
+      var target = event.target.closest('[data-panel-close]');
+      if (target && panel.contains(target)) { closePanel(); }
+    });
+
+    panel.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (form.matches('[data-send-form]')) { event.preventDefault(); sendMessage(form); }
+      else if (form.matches('[data-message-delete]')) {
+        if (event.defaultPrevented) { return; }
+        event.preventDefault();
+        deleteMessage(form);
+      }
+    });
+
+    panel.addEventListener('keydown', function (event) {
+      var box = event.target;
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && box.matches('[data-send-form] textarea')) {
+        event.preventDefault();
+        var form = box.form;
+        if (box.value.trim()) { if (form.requestSubmit) { form.requestSubmit(); } else { sendMessage(form); } }
+      }
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && state !== 'closed') { closePanel(); }
+    });
+
+    setInterval(function () { if (!document.hidden && state === 'closed') { refreshBadge(); } }, 30000);
+
+    // A link ending in #discussions (for example from the recent-activity list) opens the panel.
+    function openFromHash() { if (location.hash === '#discussions') { openPanel(); } }
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+  })();
+</script>

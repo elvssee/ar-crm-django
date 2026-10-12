@@ -151,21 +151,20 @@
   </style>
   <script>
     // Decide, before the page paints, whether the intro should play.
-    // It plays (1) the first time the site is opened in this browser session, and
-    // (2) when the main page (dashboard or login) is reloaded. Never on normal
-    // navigation between pages, and not right after logging in.
+    // It plays when the site is OPENED from outside (typed address, bookmark, a link from the
+    // terminal or another site) and when the main page (dashboard or login) is reloaded.
+    // It does not play when you move around inside the site, e.g. clicking a tab or after logging in.
     (function () {
       if (document.documentElement.classList.contains('reduce-motion')) return;
-      var seen = document.cookie.indexOf('archdo_intro=1') !== -1;
       var nav = window.performance && performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-      var isReload = !!nav && nav.type === 'reload';
+      var type = nav ? nav.type : 'navigate';
+      var fromInside = false;
+      try { fromInside = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
       var path = location.pathname;
       var isMain = path === '/' || path === '{% url "login" %}';
-      if (!seen || (isReload && isMain)) {
-        // Session cookie (no expiry): forgotten when the browser is closed.
-        document.cookie = 'archdo_intro=1; path=/; SameSite=Lax';
-        document.documentElement.classList.add('intro-on');
-      }
+      var opened = type === 'navigate' && !fromInside;
+      var reloaded = type === 'reload' && isMain;
+      if (opened || reloaded) document.documentElement.classList.add('intro-on');
     })();
   </script>
 </head>
